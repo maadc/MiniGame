@@ -126,7 +126,8 @@ function logic(frametime) {
         shot.posX += shot.dirX * shot.speed * frametime;
         shot.posY += shot.dirY * shot.speed * frametime;
 
-        if (shot.posX < 0 || shot.posX > canvas.width || shot.posY < 0 || shot.posY > canvas.height) {
+
+        if (distance >= 100) {
             character.shooting = false;
         }
     }
