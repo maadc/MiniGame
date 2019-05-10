@@ -1,19 +1,19 @@
 // game.js
 
-var canvas = document.getElementById('canvas');
-var ctx = canvas.getContext('2d');
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
 
-var backgroundImg = new Image();
-var enemyImg = new Image();
+let backgroundImg = new Image();
+let enemyImg = new Image();
 
-var character = null;
-var fireball = null;
+let character = null;
+let fireball = null;
 
-var enemies = new Array();
-var keysDown = {};
+let enemies = new Array();
+let keysDown = {};
 
-var frametimeBefore = Date.now();
-var level = 0;
+let frametimeBefore = Date.now();
+let level = 0;
 
 function init() {
     character = {
@@ -53,10 +53,10 @@ function init() {
 function generateEnemies() {
     ++level;
 
-    for (var i = 0; i < level * 5; ++i) {
+    for (let i = 0; i < level * 5; ++i) {
         // random position
-        var ranX = Math.floor(Math.random() * (canvas.width * 3)) - canvas.width;
-        var ranY = Math.floor(Math.random() * (canvas.height * 3)) - canvas.height;
+        let ranX = Math.floor(Math.random() * (canvas.width * 3)) - canvas.width;
+        let ranY = Math.floor(Math.random() * (canvas.height * 3)) - canvas.height;
 
         enemies[enemies.length] = {
             img: enemyImg,
@@ -64,6 +64,25 @@ function generateEnemies() {
             posY: ranY
         };
     }
+}
+
+function getDistance(obj1, obj2){
+    let a = obj1.posX - obj2.posX;
+    let b = obj1.posY - obj2.posY;
+
+    let angle = Math.atan2(b,a);
+    let angleDeg = angle * (180/Math.PI);
+    //console.log("Shoot angle: "+ angleDeg);
+
+    if (angle >= 0){
+    let distance = Math.cos(angle) * a;
+    return distance;
+    }
+    //else if(angleDeg > 90 && angleDeg <= 180){
+    //    let distance = Math.tan(angle) * a;
+    //   return distance;
+    //}
+    
 }
 
 function shoot(e) {
@@ -74,20 +93,23 @@ function shoot(e) {
     shot.posX = character.posX;
     shot.posY = character.posY;
 
-    var x = e.clientX - character.posX;
-    var y = e.clientY - character.posY;
+    //Get Angel from 2 Points
+    let x = e.clientX - character.posX;
+    let y = e.clientY - character.posY;
 
-    var angle = Math.atan2(y, x);
+    let angle = Math.atan2(y, x);
+    let angleDeg = angle * (180/Math.PI);
+    console.log("Shoot angle: "+ angle);
 
     shot.dirX = Math.cos(angle);
     shot.dirY = Math.sin(angle);
 }
 
 function enemyLogic(i, frametime) {
-    var x = character.posX - enemies[i].posX;
-    var y = character.posY - enemies[i].posY;
+    let x = character.posX - enemies[i].posX;
+    let y = character.posY - enemies[i].posY;
 
-    var angle = Math.atan2(y, x);
+    let angle = Math.atan2(y, x);
 
     enemies[i].posX += Math.cos(angle) * 200 * frametime;
     enemies[i].posY += Math.sin(angle) * 200 * frametime;
@@ -120,19 +142,22 @@ function logic(frametime) {
         character.posX += character.speed * frametime;
     } // D
 
-    console.log("character pos: " + character.posX + "/" + character.posY);
+    //console.log("character pos: " + character.posX + "/" + character.posY);
+
+    //Check Shooting
+    let distance = getDistance(character, shot);
 
     if (character.shooting) {
         shot.posX += shot.dirX * shot.speed * frametime;
         shot.posY += shot.dirY * shot.speed * frametime;
 
 
-        if (distance >= 100) {
+        if (distance >= 100 || shot.posX < 0 || shot.posX > canvas.width || shot.posY < 0 || shot.posY > canvas.height) {
             character.shooting = false;
         }
     }
 
-    for (var i = 0; i < enemies.length; ++i) {
+    for (let i = 0; i < enemies.length; ++i) {
         enemyLogic(i, frametime);
     }
 
@@ -144,7 +169,7 @@ function draw() {
     ctx.drawImage(backgroundImg, 0, 0);
 
     if (character.hp > 0) {
-        for (var i = 0; i < enemies.length; ++i) {
+        for (let i = 0; i < enemies.length; ++i) {
             ctx.drawImage(enemies[i].img, enemies[i].posX, enemies[i].posY);
         }
 
@@ -162,8 +187,8 @@ function draw() {
 }
 
 function gameLoop() {
-    var now = Date.now();
-    var frametime = (now - frametimeBefore) / 1000;
+    let now = Date.now();
+    let frametime = (now - frametimeBefore) / 1000;
 
     logic(frametime);
     draw();
