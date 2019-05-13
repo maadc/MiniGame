@@ -69,21 +69,10 @@ function generateEnemies() {
 function getDistance(obj1, obj2){
     let a = obj1.posX - obj2.posX;
     let b = obj1.posY - obj2.posY;
-
-    let angle = Math.atan2(b,a);
-    let angleDeg = angle * (180/Math.PI);
-    //console.log("Shoot angle: "+ angleDeg);
-
-    if (angle >= 0){
-    let distance = Math.cos(angle) * a;
+    let distance = Math.sqrt((a*a)+(b*b));
     return distance;
     }
-    //else if(angleDeg > 90 && angleDeg <= 180){
-    //    let distance = Math.tan(angle) * a;
-    //   return distance;
-    //}
     
-}
 
 function shoot(e) {
     if (character.shooting) return;
@@ -147,12 +136,11 @@ function logic(frametime) {
     //Check Shooting
     let distance = getDistance(character, shot);
 
-    if (character.shooting) {
+    if (character.shooting == true) {
         shot.posX += shot.dirX * shot.speed * frametime;
         shot.posY += shot.dirY * shot.speed * frametime;
 
-
-        if (distance >= 100 || shot.posX < 0 || shot.posX > canvas.width || shot.posY < 0 || shot.posY > canvas.height) {
+        if (distance >= 200 || shot.posX < 0 || shot.posX > canvas.width || shot.posY < 0 || shot.posY > canvas.height) {
             character.shooting = false;
         }
     }
