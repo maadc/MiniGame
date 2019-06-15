@@ -43,11 +43,12 @@ function init() {
 
     window.addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true;
+        if(e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40)
+        shoot(e.keyCode);
     }, false);
     window.addEventListener("keyup", function (e) {
         delete keysDown[e.keyCode];
     }, false);
-    window.addEventListener("click", shoot, false);
 }
 
 function generateEnemies() {
@@ -75,23 +76,29 @@ function getDistance(obj1, obj2){
     
 
 function shoot(e) {
-    if (character.shooting) return;
 
     character.shooting = true;
 
     shot.posX = character.posX;
     shot.posY = character.posY;
 
-    //Get Angel from 2 Points
-    let x = e.clientX - character.posX;
-    let y = e.clientY - character.posY;
+    if (e == 37) {
+        shot.dirY = 0;
+        shot.dirX = -1;
+    } // " < "
+    if (e == 38) {
+        shot.dirY = -1;
+        shot.dirX = 0;
+    } // " ^ "
+    if (e == 39) {
+        shot.dirY = 0;
+        shot.dirX = 1;
+    } // " > "
+    if (e == 40) {
+        shot.dirY = 1;
+        shot.dirX = 0;
+    } // "  "
 
-    let angle = Math.atan2(y, x);
-    let angleDeg = angle * (180/Math.PI);
-    console.log("Shoot angle: "+ angle);
-
-    shot.dirX = Math.cos(angle);
-    shot.dirY = Math.sin(angle);
 }
 
 function enemyLogic(i, frametime) {
@@ -140,7 +147,7 @@ function logic(frametime) {
         shot.posX += shot.dirX * shot.speed * frametime;
         shot.posY += shot.dirY * shot.speed * frametime;
 
-        if (distance >= 200 || shot.posX < 0 || shot.posX > canvas.width || shot.posY < 0 || shot.posY > canvas.height) {
+        if (distance >= 200 || shot.posX > canvas.width || shot.posY > canvas.height) {
             character.shooting = false;
         }
     }
