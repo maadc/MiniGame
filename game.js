@@ -26,6 +26,8 @@ function init() {
     };
     shot = {
         img: new Image(),
+        startX: 0,
+        startY: 0,
         posX: 0,
         posY: 0,
         dirX: 0,
@@ -43,8 +45,6 @@ function init() {
 
     window.addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true;
-        if(e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40)
-        shoot(e.keyCode);
     }, false);
     window.addEventListener("keyup", function (e) {
         delete keysDown[e.keyCode];
@@ -55,76 +55,127 @@ function generateEnemies() {
     ++level;
 
     for (let i = 0; i < level * 5; ++i) {
-        // random position
+        // random Position
         let ranX = Math.floor(Math.random() * (canvas.width * 3)) - canvas.width;
-        let ranY = Math.floor(Math.random() * (canvas.height * 3)) - canvas.height;
+        //let ranY = Math.floor(Math.random() * (canvas.height * 3)) - canvas.height;
+        let ranY = Math.floor(Math.random() * -100);
 
         enemies[enemies.length] = {
             img: enemyImg,
             posX: ranX,
-            posY: ranY
+            posY: ranY,
+            touched: false
         };
     }
 }
 
-function getDistance(obj1, obj2){
-    let a = obj1.posX - obj2.posX;
-    let b = obj1.posY - obj2.posY;
-    let distance = Math.sqrt((a*a)+(b*b));
+function getDistance(obj1X, obj1Y, obj2X, obj2Y) {
+    let a = obj1X - obj2X;
+    let b = obj1Y - obj2Y;
+    let distance = Math.sqrt((a * a) + (b * b));
     return distance;
-    }
-    
+}
 
-function shoot(e) {
-
+function shoot() {
     character.shooting = true;
+    shot.posX = shot.startX = character.posX;
+    shot.posY = shot.startY = character.posY;
 
-    shot.posX = character.posX;
-    shot.posY = character.posY;
+    if (37 in keysDown && 38 in keysDown) {
+        shot.dirY = -0.5;
+        shot.dirX = -0.5;
+        return;
+    } // "left top "
 
-    if (e == 37) {
+    if (37 in keysDown && 40 in keysDown) {
+        shot.dirY = 0.5;
+        shot.dirX = -0.5;
+        return;
+    } // "left down "
+
+    if (39 in keysDown && 40 in keysDown) {
+        shot.dirY = 0.5;
+        shot.dirX = 0.5;
+        return;
+    } // "right down "
+
+    if (39 in keysDown && 38 in keysDown) {
+        shot.dirY = -0.5;
+        shot.dirX = 0.5;
+        return;
+    } // "right up "
+
+    if (37 in keysDown) {
         shot.dirY = 0;
         shot.dirX = -1;
-    } // " < "
-    if (e == 38) {
+    } // " left "
+    if (38 in keysDown) {
         shot.dirY = -1;
         shot.dirX = 0;
-    } // " ^ "
-    if (e == 39) {
+    } // " top "
+    if (39 in keysDown) {
         shot.dirY = 0;
         shot.dirX = 1;
-    } // " > "
-    if (e == 40) {
+    } // " right "
+    if (40 in keysDown) {
         shot.dirY = 1;
         shot.dirX = 0;
-    } // "  "
+    } // " down "
 
 }
 
 function enemyLogic(i, frametime) {
     let x = character.posX - enemies[i].posX;
     let y = character.posY - enemies[i].posY;
+    // if(i == 0){
+    //     console.log("x / y :" + x + " / " + y);
+    // }
 
+    //Laufe in die Richtung vom Charakter
     let angle = Math.atan2(y, x);
-
     enemies[i].posX += Math.cos(angle) * 200 * frametime;
-    enemies[i].posY += Math.sin(angle) * 200 * frametime;
 
+    //Bevor Gegner und Charakter auf einer höhe sind, lauf 0.6 schnell, wenn du am Charakter
+    //vorbei gelaufen bist, werde schneller
+    if(y >= - 32){
+        enemies[i].posY += 0.6 * 200 * frametime;
+    } else {
+        enemies[i].posY += 1 * 200 * frametime;
+    }
+
+    //Wenn du am Ende vom Canvas bist: teleport nach oben + rnd. X-Position
+    if (enemies[i].posY >= (canvas.height + 50)){
+        enemies[i].posY = -50;
+        //Kann wieder schaden machen.
+        enemies[i].touched = false;
+        if (Math.random()<0.5){
+            enemies[i].posX = Math.floor(Math.random() * 300) + enemies[i].posX;
+        } else {
+            enemies[i].posX = Math.floor(Math.random() * -300) + enemies[i].posX;
+        }
+    }
+
+    //Wenn Gegner getroffen wird---
     if (character.shooting &&
-        shot.posX >= enemies[i].posX && shot.posX <= enemies[i].posX + 32 &&
-        shot.posY >= enemies[i].posY && shot.posY <= enemies[i].posY + 32) {
+        shot.posX + 16 >= enemies[i].posX && shot.posX <= enemies[i].posX + 16 &&
+        shot.posY + 16 >= enemies[i].posY && shot.posY <= enemies[i].posY + 16) {
         enemies.splice(i, 1);
         character.shooting = false;
     }
 
-    if (character.hp > 0 &&
+    //Gegner berührt Charakter...
+    if (character.hp > 0 && enemies[i].touched == false &&
         enemies[i].posX >= character.posX && enemies[i].posX <= character.posX + 32 &&
         enemies[i].posY >= character.posY && enemies[i].posY <= character.posY + 32) {
-        character.hp -= 50 * frametime;
+        character.hp -= 250;
+        enemies[i].touched = true;
     }
 }
 
 function logic(frametime) {
+    if ((37 in keysDown || 38 in keysDown || 39 in keysDown || 40 in keysDown) && character.shooting == false) {
+        shoot();
+    }
     if (87 in keysDown && (character.posY > 0)) {
         character.posY -= character.speed * frametime;
     } // W
@@ -141,38 +192,39 @@ function logic(frametime) {
     //console.log("character pos: " + character.posX + "/" + character.posY);
 
     //Check Shooting
-    let distance = getDistance(character, shot);
+    let distance = getDistance(shot.startX, shot.startY, shot.posX, shot.posY);
 
     if (character.shooting == true) {
         shot.posX += shot.dirX * shot.speed * frametime;
         shot.posY += shot.dirY * shot.speed * frametime;
 
-        if (distance >= 200 || shot.posX > canvas.width || shot.posY > canvas.height) {
+        if (distance >= 200 /*|| shot.posX > canvas.width || shot.posX < 0 || shot.posY > canvas.height || shot.posY < 0*/ ) {
             character.shooting = false;
         }
     }
 
+    //Auskommentieren für Spiel ohne Gegner  
+    if(enemies.length == 0){generateEnemies()};
+
     for (let i = 0; i < enemies.length; ++i) {
         enemyLogic(i, frametime);
     }
-
-    //Auskommentieren für Spiel ohne Gegner  
-    //if(enemies.length == 0) generateEnemies();
 }
 
 function draw() {
     ctx.drawImage(backgroundImg, 0, 0);
 
     if (character.hp > 0) {
+        if (character.shooting == true) {
+            ctx.drawImage(shot.img, shot.posX, shot.posY);
+        } 
         for (let i = 0; i < enemies.length; ++i) {
             ctx.drawImage(enemies[i].img, enemies[i].posX, enemies[i].posY);
         }
 
         ctx.drawImage(character.img, character.posX, character.posY);
 
-        if (character.shooting) {
-            ctx.drawImage(shot.img, shot.posX, shot.posY);
-        }
+       
     }
 
     ctx.font = "20px Verdana";
