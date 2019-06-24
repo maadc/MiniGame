@@ -144,14 +144,16 @@ function enemyLogic(i, frametime) {
     }
 
     //Wenn du am Ende vom Canvas bist: teleport nach oben + rnd. X-Position
-    if (enemies[i].posY >= (canvas.height + 50)){
-        enemies[i].posY = -50;
+    if (enemies[i].posY >= (canvas.height + enemies[i].img.height)){
+        enemies[i].posY = -enemies[i].img.height;
         //Kann wieder schaden machen.
         enemies[i].touched = false;
+        debugger;
+        
         if (Math.random()<0.5){
-            enemies[i].posX = Math.floor(Math.random() * 300) + enemies[i].posX;
+            enemies[i].posX = Math.floor(Math.random() * 300);
         } else {
-            enemies[i].posX = Math.floor(Math.random() * -300) + enemies[i].posX;
+            enemies[i].posX = Math.floor(Math.random() * 300 +300);
         }
     }
 
