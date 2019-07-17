@@ -137,41 +137,48 @@ function enemyLogic(i, frametime) {
 
     //Bevor Gegner und Charakter auf einer höhe sind, lauf 0.6 schnell, wenn du am Charakter
     //vorbei gelaufen bist, werde schneller
-    if(y >= - 32){
+    if (y >= -32) {
         enemies[i].posY += 0.6 * 200 * frametime;
     } else {
         enemies[i].posY += 1 * 200 * frametime;
     }
 
     //Wenn du am Ende vom Canvas bist: teleport nach oben + rnd. X-Position
-    if (enemies[i].posY >= (canvas.height + enemies[i].img.height)){
+    if (enemies[i].posY >= (canvas.height + enemies[i].img.height)) {
         enemies[i].posY = -enemies[i].img.height;
         //Kann wieder schaden machen.
         enemies[i].touched = false;
         debugger;
-        
-        if (Math.random()<0.5){
+
+        if (Math.random() < 0.5) {
             enemies[i].posX = Math.floor(Math.random() * 300);
         } else {
-            enemies[i].posX = Math.floor(Math.random() * 300 +300);
+            enemies[i].posX = Math.floor(Math.random() * 300 + 300);
         }
     }
 
-    //Wenn Gegner getroffen wird---
-    if (character.shooting &&
-        shot.posX + 16 >= enemies[i].posX && shot.posX <= enemies[i].posX + 16 &&
-        shot.posY + 16 >= enemies[i].posY && shot.posY <= enemies[i].posY + 16) {
-        enemies.splice(i, 1);
+    //Kollision zwischen Schuss und Gegner
+    if ((collision(enemies[i], shot) === true) && character.shooting === true) {
         character.shooting = false;
+        enemies.splice(i, 1);
     }
 
-    //Gegner berührt Charakter...
-    if (character.hp > 0 && enemies[i].touched == false &&
-        enemies[i].posX >= character.posX && enemies[i].posX <= character.posX + 32 &&
-        enemies[i].posY >= character.posY && enemies[i].posY <= character.posY + 32) {
-        character.hp -= 250;
+    //Kollision zwischen Charakter und Gegner
+    if (character.hp > 0 && enemies[i].touched === false && (collision(enemies[i], character) === true) ) {
+        //DAMAGE:
+        //character.hp -= 1;
         enemies[i].touched = true;
     }
+}
+
+function collision(a, b) {
+    if ((a.posX >= b.posX && a.posX <= b.posX + a.img.width && a.posY >= b.posY && a.posY <= b.posY + b.img.height) ||
+        (b.posX >= a.posX && b.posX <= a.posX + a.img.width && a.posY >= b.posY && a.posY <= b.posY + b.img.height) ||
+        (b.posX >= a.posX && b.posX <= a.posX + a.img.width && b.posY >= a.posY && b.posY <= a.posY + a.img.height) ||
+        (a.posX >= b.posX && a.posX <= b.posX + a.img.width && b.posY >= a.posY && b.posY <= a.posY + a.img.height)) {
+        return true;
+    }
+    return false;
 }
 
 function logic(frametime) {
@@ -206,7 +213,9 @@ function logic(frametime) {
     }
 
     //Auskommentieren für Spiel ohne Gegner  
-    if(enemies.length == 0){generateEnemies()};
+    if (enemies.length == 0) {
+        generateEnemies()
+    };
 
     for (let i = 0; i < enemies.length; ++i) {
         enemyLogic(i, frametime);
@@ -219,14 +228,14 @@ function draw() {
     if (character.hp > 0) {
         if (character.shooting == true) {
             ctx.drawImage(shot.img, shot.posX, shot.posY);
-        } 
+        }
         for (let i = 0; i < enemies.length; ++i) {
             ctx.drawImage(enemies[i].img, enemies[i].posX, enemies[i].posY);
         }
 
         ctx.drawImage(character.img, character.posX, character.posY);
 
-       
+
     }
 
     ctx.font = "20px Verdana";
