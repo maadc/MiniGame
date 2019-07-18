@@ -5,16 +5,16 @@ let ctx = canvas.getContext('2d');
 
 let backgroundImg = new Image();
 let enemyImg = new Image();
+let shotImg = new Image();
 
 let character = null;
 let fireball = null;
-
+let shots = new Array();
 let enemies = new Array();
 let keysDown = {};
 
 let frametimeBefore = Date.now();
 let frametime; // in seconds
-let level = 0;
 
 function init() {
     character = {
@@ -25,30 +25,22 @@ function init() {
         hp: 1000,
         speed: 300
     };
-    shot = {
-        img: new Image(),
-        startX: 0,
-        startY: 0,
-        posX: 0,
-        posY: 0,
-        dirX: 0,
-        dirY: 0,
-        distance: 0,
-        maxDistance: 200,
-        status: 0, // 2=shooting, 1=reloading, 0=ready
-        reloadTime: 1, // in sec.
-        airTime: 0, // in sec.
-        speed: 600
+    gut = {
+        reloadTime: 0.4,
     };
-
+    stats = {
+        enemies: true,
+        enemiesNumber: enemies.length,
+        level: 0,
+    };
     backgroundImg.src = 'images/background.png';
     character.img.src = 'images/character.png';
-    shot.img.src = 'images/shot.png';
+    shotImg.src = 'images/shot.png';
     enemyImg.src = 'images/enemy.png';
 
-    //Comment section below for game without enemies 
-    generateEnemies();
-
+    if (stats.enemies === true) {
+        generateEnemies();
+    }
     window.addEventListener("keydown", function (e) {
         keysDown[e.keyCode] = true;
     }, false);
@@ -58,22 +50,42 @@ function init() {
 }
 
 function generateEnemies() {
-    ++level;
-
-    for (let i = 0; i < level * 5; ++i) {
+    ++stats.level;
+    for (let i = 0; i < stats.level * 5; ++i) {
         // random position
         let ranX = Math.floor(Math.random() * (canvas.width * 3)) - canvas.width;
         //let ranY = Math.floor(Math.random() * (canvas.height * 3)) - canvas.height;
         let ranY = Math.floor(Math.random() * -100);
 
+        //generate an enemie object inside the enemie-array
         enemies[enemies.length] = {
             img: enemyImg,
             posX: ranX,
             posY: ranY,
             speed: 200,
+            damage: 0,
             touched: false
         };
     }
+}
+
+function generateShots() {
+    shots[shots.length] = {
+        img: shotImg,
+        startX: character.posX,
+        startY: character.posY,
+        posX: character.posX,
+        posY: character.posY,
+        dirX: 0,
+        dirY: 0,
+        distance: 0, // in px
+        maxDistance: 200, // in px
+        status: 2, // 2=shooting, 1=reloading, 0=ready
+        reloadTime: 0.4, // in sec.
+        airTime: 0, // in sec.
+        speed: 600
+    }
+    shotDirection(shots[shots.length+1]);
 }
 
 function getDistance(obj1X, obj1Y, obj2X, obj2Y) {
@@ -83,50 +95,43 @@ function getDistance(obj1X, obj1Y, obj2X, obj2Y) {
     return distance;
 }
 
-function shoot() {
-    shot.status = 2;
-    shot.posX = shot.startX = character.posX;
-    shot.posY = shot.startY = character.posY;
-    shotDirection();
-
-    function shotDirection() {
-        if (37 in keysDown && 38 in keysDown) {
-            shot.dirY = -0.5;
-            shot.dirX = -0.5;
-            return;
-        } // "left top "
-        if (37 in keysDown && 40 in keysDown) {
-            shot.dirY = 0.5;
-            shot.dirX = -0.5;
-            return;
-        } // "left down "
-        if (39 in keysDown && 40 in keysDown) {
-            shot.dirY = 0.5;
-            shot.dirX = 0.5;
-            return;
-        } // "right down "
-        if (39 in keysDown && 38 in keysDown) {
-            shot.dirY = -0.5;
-            shot.dirX = 0.5;
-            return;
-        } // "right up "
-        if (37 in keysDown) {
-            shot.dirY = 0;
-            shot.dirX = -1;
-        } // " left "
-        if (38 in keysDown) {
-            shot.dirY = -1;
-            shot.dirX = 0;
-        } // " top "
-        if (39 in keysDown) {
-            shot.dirY = 0;
-            shot.dirX = 1;
-        } // " right "
-        if (40 in keysDown) {
-            shot.dirY = 1;
-            shot.dirX = 0;
-        } // " down "
-    }
+function shotDirection(shot) {
+    if (37 in keysDown && 38 in keysDown) {
+        shot.dirY = -0.5;
+        shot.dirX = -0.5;
+        return;
+    } // "left top "
+    if (37 in keysDown && 40 in keysDown) {
+        shot.dirY = 0.5;
+        shot.dirX = -0.5;
+        return;
+    } // "left down "
+    if (39 in keysDown && 40 in keysDown) {
+        shot.dirY = 0.5;
+        shot.dirX = 0.5;
+        return;
+    } // "right down "
+    if (39 in keysDown && 38 in keysDown) {
+        shot.dirY = -0.5;
+        shot.dirX = 0.5;
+        return;
+    } // "right up "
+    if (37 in keysDown) {
+        shot.dirY = 0;
+        shot.dirX = -1;
+    } // " left "
+    if (38 in keysDown) {
+        shot.dirY = -1;
+        shot.dirX = 0;
+    } // " top "
+    if (39 in keysDown) {
+        shot.dirY = 0;
+        shot.dirX = 1;
+    } // " right "
+    if (40 in keysDown) {
+        shot.dirY = 1;
+        shot.dirX = 0;
+    } // " down "
 }
 
 function collision(a, b) {
@@ -156,29 +161,41 @@ function logic(frametime) {
         character.posX += character.speed * frametime;
     } // D
 
-    //Check Shooting
-    shot.posX += shot.dirX * shot.speed * frametime;
-    shot.posY += shot.dirY * shot.speed * frametime;
-    shot.airTime += frametime;
-    shot.distance = getDistance(shot.startX, shot.startY, shot.posX, shot.posY);
-
-    if (shot.distance >= shot.maxDistance) {
-        shot.status = 1;
-    }
-
-    if (shot.airTime >= shot.reloadTime) {
-        shot.airTime = 0;
-        shot.status = 0;
+    for (let i = 0; i < shots.length; ++i) {
+        shotLogic(i, frametime);
     }
 
     //Comment section below for game without enemies 
     if (enemies.length == 0) {
-        generateEnemies();
+        if (stats.enemies === true) {
+            generateEnemies();
+        }
+    }
+    if (stats.enemies === true) {
+        for (let i = 0; i < enemies.length; ++i) {
+            enemyLogic(i, frametime);
+        }
+    }
+}
+
+function shotLogic(i, frametime) {
+    //update positon/air time of shot
+    shots[i].posX += shots[i].dirX * shots[i].speed * frametime;
+    shots[i].posY += shots[i].dirY * shots[i].speed * frametime;
+    shots[i].airTime += frametime;
+    shots[i].distance = getDistance(shots[i].startX, shots[i].startY, shots[i].posX, shots[i].posY);
+
+    // set shot status to "relaod"
+    if (shots[i].distance >= shots[i].maxDistance) {
+        shots[i].status = 1;
     }
 
-    for (let i = 0; i < enemies.length; ++i) {
-        enemyLogic(i, frametime);
+    // if enough time passed since the shot was fired + reload time, then set shot status to "ready"
+    if (shots[i].airTime >= shots[i].reloadTime) {
+        shots[i].airTime = 0;
+        shots[i].status = 0;
     }
+
 }
 
 function enemyLogic(i, frametime) {
@@ -211,15 +228,13 @@ function enemyLogic(i, frametime) {
 
     //collision between character and enemie
     if ((collision(enemies[i], shot) === true) && shot.status === 2) {
-        debugger;
         shot.status = 1;
         enemies.splice(i, 1);
     }
 
     //collision between character and enemie
     if (character.hp > 0 && enemies[i].touched === false && (collision(enemies[i], character) === true)) {
-        //DAMAGE:
-        //character.hp -= 1;
+        character.hp -= enemies[i].damage;
         enemies[i].touched = true;
     }
 }
@@ -231,18 +246,16 @@ function draw() {
         if (shot.status === 2) {
             ctx.drawImage(shot.img, shot.posX, shot.posY);
         }
-        for (let i = 0; i < enemies.length; ++i) {
-            ctx.drawImage(enemies[i].img, enemies[i].posX, enemies[i].posY);
+        if (stats.enemies === true) {
+            for (let i = 0; i < enemies.length; ++i) {
+                ctx.drawImage(enemies[i].img, enemies[i].posX, enemies[i].posY);
+            }
         }
-
         ctx.drawImage(character.img, character.posX, character.posY);
-
-
     }
-
     ctx.font = "20px Verdana";
     ctx.fillStyle = 'rgb(200, 200, 200)';
-    ctx.fillText("Level: " + level, 20, 30)
+    ctx.fillText("Level: " + stats.level, 20, 30)
     ctx.fillText("HP: " + Math.ceil(character.hp), 20, 60);
 }
 
@@ -251,7 +264,6 @@ function gameLoop() {
     frametime = (now - frametimeBefore) / 1000;
     logic(frametime);
     draw();
-
     frametimeBefore = now;
 }
 
