@@ -1,5 +1,10 @@
 # MiniGame
 
+–– Facts ––
+Frametime: ~60fps
+speed-poperty: speed * frametime = px/frame
+
+
 –– Language: German ––
 
 - Schüsse:

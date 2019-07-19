@@ -21,12 +21,12 @@ function init() {
         img: new Image(),
         posX: 200,
         posY: 200,
-        shooting: false,
+        maxShots: 2,
         hp: 1000,
-        speed: 300
+        speed: 300,
     };
-    gut = {
-        reloadTime: 0.4,
+    gun = {
+        reloadTime: 0.4, // in sec.
     };
     stats = {
         enemies: true,
@@ -79,13 +79,58 @@ function generateShots() {
         dirX: 0,
         dirY: 0,
         distance: 0, // in px
-        maxDistance: 200, // in px
+        maxDistance: 250, // in px
         status: 2, // 2=shooting, 1=reloading, 0=ready
-        reloadTime: 0.4, // in sec.
         airTime: 0, // in sec.
-        speed: 600
+        speed: 400
     }
-    shotDirection(shots[shots.length+1]);
+    shotDirection(shots[shots.length - 1]);
+
+    function shotDirection(shot) {
+        if (37 in keysDown && 38 in keysDown) {
+            shot.dirY = -0.5;
+            shot.dirX = -0.5;
+            return;
+        } // "left top "
+        else if (37 in keysDown && 40 in keysDown) {
+            shot.dirY = 0.5;
+            shot.dirX = -0.5;
+            return;
+        } // "left down "
+        else if (39 in keysDown && 40 in keysDown) {
+            shot.dirY = 0.5;
+            shot.dirX = 0.5;
+            return;
+        } // "right down "
+        else if (39 in keysDown && 38 in keysDown) {
+            shot.dirY = -0.5;
+            shot.dirX = 0.5;
+            return;
+        } // "right up "
+        else if (37 in keysDown) {
+            shot.dirY = 0;
+            shot.dirX = -1;
+            return;
+        } // " left "
+        else if (38 in keysDown) {
+            shot.dirY = -1;
+            shot.dirX = 0;
+            return;
+        } // " top "
+        else if (39 in keysDown) {
+            shot.dirY = 0;
+            shot.dirX = 1;
+            return;
+        } // " right "
+        else if (40 in keysDown) {
+            shot.dirY = 1;
+            shot.dirX = 0;
+            return;
+        } // " down "
+        else {
+            shots.splice(shots.length - 1, 1);;
+        }
+    }
 }
 
 function getDistance(obj1X, obj1Y, obj2X, obj2Y) {
@@ -95,58 +140,25 @@ function getDistance(obj1X, obj1Y, obj2X, obj2Y) {
     return distance;
 }
 
-function shotDirection(shot) {
-    if (37 in keysDown && 38 in keysDown) {
-        shot.dirY = -0.5;
-        shot.dirX = -0.5;
-        return;
-    } // "left top "
-    if (37 in keysDown && 40 in keysDown) {
-        shot.dirY = 0.5;
-        shot.dirX = -0.5;
-        return;
-    } // "left down "
-    if (39 in keysDown && 40 in keysDown) {
-        shot.dirY = 0.5;
-        shot.dirX = 0.5;
-        return;
-    } // "right down "
-    if (39 in keysDown && 38 in keysDown) {
-        shot.dirY = -0.5;
-        shot.dirX = 0.5;
-        return;
-    } // "right up "
-    if (37 in keysDown) {
-        shot.dirY = 0;
-        shot.dirX = -1;
-    } // " left "
-    if (38 in keysDown) {
-        shot.dirY = -1;
-        shot.dirX = 0;
-    } // " top "
-    if (39 in keysDown) {
-        shot.dirY = 0;
-        shot.dirX = 1;
-    } // " right "
-    if (40 in keysDown) {
-        shot.dirY = 1;
-        shot.dirX = 0;
-    } // " down "
-}
-
 function collision(a, b) {
-    if ((a.posX >= b.posX && a.posX <= b.posX + a.img.width && a.posY >= b.posY && a.posY <= b.posY + b.img.height) ||
+    if ((a.posX >= b.posX && a.posX <= b.posX + b.img.width && a.posY >= b.posY && a.posY <= b.posY + b.img.height) ||
         (b.posX >= a.posX && b.posX <= a.posX + a.img.width && a.posY >= b.posY && a.posY <= b.posY + b.img.height) ||
         (b.posX >= a.posX && b.posX <= a.posX + a.img.width && b.posY >= a.posY && b.posY <= a.posY + a.img.height) ||
-        (a.posX >= b.posX && a.posX <= b.posX + a.img.width && b.posY >= a.posY && b.posY <= a.posY + a.img.height)) {
+        (a.posX >= b.posX && a.posX <= b.posX + b.img.width && b.posY >= a.posY && b.posY <= a.posY + a.img.height)) {
         return true;
     }
     return false;
 }
 
 function logic(frametime) {
-    if ((37 in keysDown || 38 in keysDown || 39 in keysDown || 40 in keysDown) && shot.status === 0) {
-        shoot();
+    if ((37 in keysDown || 38 in keysDown || 39 in keysDown || 40 in keysDown) && shots.length < character.maxShots) {
+        if (shots.length >= 1) {
+            if (shots[shots.length - 1].airTime >= gun.reloadTime) {
+                generateShots();
+            }
+        } else {
+            generateShots();
+        }
     }
     if (87 in keysDown && (character.posY > 0)) {
         character.posY -= character.speed * frametime;
@@ -178,6 +190,7 @@ function logic(frametime) {
     }
 }
 
+
 function shotLogic(i, frametime) {
     //update positon/air time of shot
     shots[i].posX += shots[i].dirX * shots[i].speed * frametime;
@@ -185,17 +198,9 @@ function shotLogic(i, frametime) {
     shots[i].airTime += frametime;
     shots[i].distance = getDistance(shots[i].startX, shots[i].startY, shots[i].posX, shots[i].posY);
 
-    // set shot status to "relaod"
     if (shots[i].distance >= shots[i].maxDistance) {
-        shots[i].status = 1;
+        shots.splice(i, 1);
     }
-
-    // if enough time passed since the shot was fired + reload time, then set shot status to "ready"
-    if (shots[i].airTime >= shots[i].reloadTime) {
-        shots[i].airTime = 0;
-        shots[i].status = 0;
-    }
-
 }
 
 function enemyLogic(i, frametime) {
@@ -227,15 +232,19 @@ function enemyLogic(i, frametime) {
     }
 
     //collision between character and enemie
-    if ((collision(enemies[i], shot) === true) && shot.status === 2) {
-        shot.status = 1;
-        enemies.splice(i, 1);
-    }
-
-    //collision between character and enemie
     if (character.hp > 0 && enemies[i].touched === false && (collision(enemies[i], character) === true)) {
         character.hp -= enemies[i].damage;
         enemies[i].touched = true;
+    }
+    //collision between enemie and shot
+    if (shots.length > 1) {
+        for (let s = 0; s < shots.length; ++s) {
+            debugger;
+            if (shots[s].status === 2 && (collision(enemies[i], shots[s]) === true)) {
+                shots[s].status = 1;
+                enemies.splice(i, 1);
+            }
+        }
     }
 }
 
@@ -243,8 +252,10 @@ function draw() {
     ctx.drawImage(backgroundImg, 0, 0);
 
     if (character.hp > 0) {
-        if (shot.status === 2) {
-            ctx.drawImage(shot.img, shot.posX, shot.posY);
+        for (let i = 0; i < shots.length; ++i) {
+            if (shots[i].status === 2) {
+                ctx.drawImage(shots[i].img, shots[i].posX, shots[i].posY);
+            }
         }
         if (stats.enemies === true) {
             for (let i = 0; i < enemies.length; ++i) {
@@ -261,7 +272,7 @@ function draw() {
 
 function gameLoop() {
     let now = Date.now();
-    frametime = (now - frametimeBefore) / 1000;
+    frametime = (now - frametimeBefore) * 0.001;
     logic(frametime);
     draw();
     frametimeBefore = now;
