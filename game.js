@@ -27,18 +27,20 @@ function init() {
     };
     gun = {
         reloadTime: 0.4, // in sec.
+        status: 2, // 2=shooting, 1=reloading, 0=ready
     };
-    stats = {
+    preferences = {
         enemies: true,
         enemiesNumber: enemies.length,
         level: 0,
     };
+
     backgroundImg.src = 'images/background.png';
     character.img.src = 'images/character.png';
     shotImg.src = 'images/shot.png';
     enemyImg.src = 'images/enemy.png';
 
-    if (stats.enemies === true) {
+    if (preferences.enemies === true) {
         generateEnemies();
     }
     window.addEventListener("keydown", function (e) {
@@ -50,8 +52,8 @@ function init() {
 }
 
 function generateEnemies() {
-    ++stats.level;
-    for (let i = 0; i < stats.level * 5; ++i) {
+    ++preferences.level;
+    for (let i = 0; i < preferences.level * 5; ++i) {
         // random position
         let ranX = Math.floor(Math.random() * (canvas.width * 3)) - canvas.width;
         //let ranY = Math.floor(Math.random() * (canvas.height * 3)) - canvas.height;
@@ -79,8 +81,7 @@ function generateShots() {
         dirX: 0,
         dirY: 0,
         distance: 0, // in px
-        maxDistance: 250, // in px
-        status: 2, // 2=shooting, 1=reloading, 0=ready
+        maxDistance: 250, // in px 
         airTime: 0, // in sec.
         speed: 400
     }
@@ -176,14 +177,12 @@ function logic(frametime) {
     for (let i = 0; i < shots.length; ++i) {
         shotLogic(i, frametime);
     }
-
-    //Comment section below for game without enemies 
     if (enemies.length == 0) {
-        if (stats.enemies === true) {
+        if (preferences.enemies === true) {
             generateEnemies();
         }
     }
-    if (stats.enemies === true) {
+    if (preferences.enemies === true) {
         for (let i = 0; i < enemies.length; ++i) {
             enemyLogic(i, frametime);
         }
@@ -237,9 +236,9 @@ function enemyLogic(i, frametime) {
         enemies[i].touched = true;
     }
     //collision between enemie and shot
-    if (shots.length > 1) {
+    if (shots.length >= 1) {
+        debugger;
         for (let s = 0; s < shots.length; ++s) {
-            debugger;
             if (shots[s].status === 2 && (collision(enemies[i], shots[s]) === true)) {
                 shots[s].status = 1;
                 enemies.splice(i, 1);
@@ -257,7 +256,7 @@ function draw() {
                 ctx.drawImage(shots[i].img, shots[i].posX, shots[i].posY);
             }
         }
-        if (stats.enemies === true) {
+        if (preferences.enemies === true) {
             for (let i = 0; i < enemies.length; ++i) {
                 ctx.drawImage(enemies[i].img, enemies[i].posX, enemies[i].posY);
             }
@@ -266,13 +265,16 @@ function draw() {
     }
     ctx.font = "20px Verdana";
     ctx.fillStyle = 'rgb(200, 200, 200)';
-    ctx.fillText("Level: " + stats.level, 20, 30)
+    ctx.fillText("Level: " + preferences.level, 20, 30)
     ctx.fillText("HP: " + Math.ceil(character.hp), 20, 60);
 }
 
 function gameLoop() {
-    let now = Date.now();
-    frametime = (now - frametimeBefore) * 0.001;
+    let now = Date.now(); //gibt eine bestimmte Anzahl an Millisekunden aus. 
+    frametime = (now - frametimeBefore) * 0.001; 
+    // Abhängigkeit von Frametime ist wichtig, weil selbst bei geringer Prozessorgeschwindigkeit
+    // das Spiel nicht schneller laufen soll, als der Spieler es spielen kann. 
+    // gleichzeitig bestimmt die frametim die Spielgeschwindigkeit.
     logic(frametime);
     draw();
     frametimeBefore = now;
